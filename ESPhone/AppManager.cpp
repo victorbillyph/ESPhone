@@ -181,11 +181,31 @@ void AppManager::setSearchMode(SearchMode mode) {
 }
 
 // ------------------------------------------------------------
+// Modo setup (primeiro boot)
+// ------------------------------------------------------------
+void AppManager::setSetupMode(bool on) {
+  setupMode_ = on;
+  if (on) {
+    mode_ = LED_SLOW;        // pisca lento aguardando configuração
+    Serial.println("\n[Setup] MODO SETUP ATIVO");
+    Serial.println("[Setup] Clique o botao BOOT para começar a configuração.");
+    Serial.println("[Setup] No celular configure: NOME, REDE WIFI e PIN.");
+  } else {
+    mode_ = LED_SOLID_ON;
+  }
+}
+
+// ------------------------------------------------------------
 // Dispatcher de navegação (botão / web / BLE)
 // ------------------------------------------------------------
 void AppManager::selectApp() {
-  inApp_ = true;
-  blink(2, LED_SLOW); // 2 piscadas e depois piscar lento
+  // Setup pendente: bloqueia abrir APPS — só o modo setup pode abrir.
+  if (Config.firstBoot()) {
+    Serial.println("[Setup] APP BLOQUEADO - conclua o setup antes de abrir apps.");    notify(3, 120, 120);
+    return;
+  }
+        inApp_ = true;
+        blink(idx_ + 1, LED_SOLID_ON); // LED: posição do app aberto
 }
 
 void AppManager::dispatch(int action, int param) {
@@ -205,7 +225,12 @@ void AppManager::dispatch(int action, int param) {
       break;
 
     case NAV_GOTO:
-      if (!inApp_ && param >= 0 && param < APP_COUNT) {
+      if (!inApp_) {
+        if (Config.firstBoot()) {
+          Serial.println("[Setup] APP BLOQUEADO - conclua o setup antes de abrir apps.");
+          notify(3, 120, 120);
+          break;
+        }
         idx_ = param;
       }
       // continua para SELECT
