@@ -101,6 +101,27 @@ void setup() {
   Serial.println("==================================");
 
   Config.init();
+
+  // ------------------------------------------------------------
+  // PRIMEIRO BOOT -> MODO SETUP
+  // Dispositivo novo: pisca lento e espera configuração pelo app.
+  // Para INICIAR a configuração, clique no botão BOOT -
+  // depois configure pelo celular: NOME, REDE WiFi e PIN.
+  // ------------------------------------------------------------
+  if (Config.firstBoot()) {
+    appMgr.setSetupMode(true);
+    Serial.println();
+    Serial.println("+++++++++++++++++++++++++++++++++++++++++");
+    Serial.println(" ESPhone NOVO - MODO SETUP");
+    Serial.println(" 1) Clique no botao BOOT para INICIAR a");
+    Serial.println("    configuração (pode repetir se quiser).");
+    Serial.println(" 2) Abra o app (BLE) no celular.");
+    Serial.println(" 3) Configure: NOME, REDE WiFi e PIN.");
+    Serial.println(" 4) Finalize: o ESP reinicia automaticamente.");
+    Serial.println("+++++++++++++++++++++++++++++++++++++++++");
+    Serial.println();
+  }
+
   appMgr.begin();
   Fs.begin();               // LittleFS: /system /apps /config /data
   bleSvc.begin(&appMgr);

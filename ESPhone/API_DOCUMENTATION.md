@@ -373,3 +373,69 @@ Ainda pendente (próximo estágio): migrar WebPortal.cpp de HTML → JSON
 nativo (remover webpages.h 63KB) e PIN+pairing via BOOT+LED.
 
 Fim da migração — dispositivo responde http://<ip>/api/* e BLE JSON.
+
+---
+
+## Contrato de TELA — renderer nativo do Android (widgets que o app desenha)
+
+O app Android (com.esphone.app) é o renderer: a interface inteira é a tela.
+O ESP32 EMITE a tela; o app DESENHA e devolve ações. Mantenha este schema
+no Protocol.h (o app tolera widgets desconhecidos, mostrando como texto).
+
+### Pacotes recebidos (STATE / HTTP)
+
+```json
+{"t":"state","v":2,"apps":[{"id":"notas","name":"Notas","icon":""}],
+ "current":"home","inApp":false,
+ "app":{"children":[{widget},...]},
+ "led":{"mode":1,"bri":255,"invert":false}}
+```
+
+`state.app` (e o pacote `{"t":"screen","app":"<id>","screen":{...}}`) contêm
+um objeto de tela com campos:
+
+| Campo | Tipo | Uso |
+|-------|------|-----|
+| `children` / `elements` / `items` | array | lista de widgets da tela (o app também aceita uma única widget `{"type":...}` no root) |
+
+### Widgets (dentro de children)
+
+| `type` | Campos | Renderização push |
+|--------|--------|-------------------|
+| `title` / `label_big` | `text` | título (negrito) |
+| `label` | `text` | linha de texto |
+| `hint` / `subtext` | `text` | texto apagado |
+| `button` | `text`, `action`, `style` (`tonal`\|`filled`) | botão → envia ação `action` (default `click`) |
+| `row` | `children` | linha com filhos distribuídos 1:1 |
+| `input` | `text` (rótulo), `value`, `target` | campo de texto + botão "Aplicar" → ação `set` com `value` digitado |
+| `switch` | `text`, `on`, `target` | switch → ação `set` com `value` `true`/`false` |
+| `divider` | - | linha divisória |
+| `space` / `spacer` | - | espaço vertical |
+
+### Ações enviadas pelo app (CMD / HTTP)
+
+```json
+{"t":"action","v":2,"app":"<id>","action":"open|next|prev|select|back|home|click|set|save|reboot","target":"<widget>","value":"<valor>"}
+```
+
+- Tocar num app da home → `action:"open"` no `app` do app.
+- D-pad → `action:"next|prev|select|back|home"`.
+- Widget `button` → `action` do próprio widget (ex.: `click`, `save`).
+- Widget `input`/`switch` → `action:"set"` com `target` e `value`.
+
+### Estado "em layout" (setup) e configuração pelo app
+
+O app detecta que o ESP32 está em modo de configuração quando o `state`
+indicar **STA desconectado** (modo AP aberto):
+- JSON: `wifi.sta=false` ou `ip == "192.168.4.1"`;
+- protocolo antigo: `ip:192.168.4.1`.
+
+Nesse caso o app mostra um banner "Configurar" e abre uma tela de
+configuração que usa HTTP `http://<IP_AP>/api/*` (o celular precisa estar
+no WiFi do ESPhone):
+- `GET /api/config` → carrega `deviceName`, `staSsid`, `staPassword`, `apSsid`, `apPassword`;
+- `POST /api/config {"deviceName":...}` → renomeia;
+- `POST /api/wifi {"mode":"sta","ssid":..,"password":..}` → conecta na rede;
+- `POST /api/wifi {"mode":"ap","ssid":..,"password":..}` → reconfigura o AP;
+- `POST /api/reboot` → reinicia;
+- autorização: `Authorization: Bearer <PIN>` (header) quando o `uiPin` está configurado.

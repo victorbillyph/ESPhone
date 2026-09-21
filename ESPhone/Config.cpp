@@ -35,6 +35,8 @@ void ConfigClass::loadDefaults() {
   // Caça-WiFi
   cfg_.wifiHunter = false;
   cfg_.hunterInterval = 30;
+  // Primeiro boot = setup pendente (padrão de fábrica)
+  cfg_.setupDone = false;
 }
 
 void ConfigClass::init() {
@@ -119,6 +121,8 @@ void ConfigClass::save() {
   // Caça-WiFi
   prefs.putBool("wfhunt",  cfg_.wifiHunter);
   prefs.putUShort("huntint", cfg_.hunterInterval);
+  // Estado da configuração inicial
+  prefs.putBool("setupdone", cfg_.setupDone);
   prefs.end();
   Serial.println("[Config] salvo");
 }

@@ -35,6 +35,11 @@ struct DeviceConfig {
   uint16_t hunterInterval;  // intervalo de scan em segundos
   // UI PIN (4 dígitos) - vazio = não configurado
   String  uiPin;
+
+  // Primeiro boot: configuração inicial ainda não foi feita.
+  // Quando false (padrão), o dispositivo entra em "modo setup"
+  // e só após nome+WiFi+PIN salvos ele passa a operar normalmente.
+  bool    setupDone;
 };
 
 class ConfigClass {
@@ -44,6 +49,12 @@ public:
 
   void save();
   void reset();
+
+  // true enquanto o usuário ainda não completou a configuração inicial
+  bool firstBoot() const { return !cfg_.setupDone; }
+
+  // Marca a configuração inicial como concluída e persiste.
+  void markSetupDone();
 
   void saveNotes(const String &notes);
   String getNotes();

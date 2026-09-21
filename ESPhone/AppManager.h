@@ -63,6 +63,11 @@ public:
   void setSearchMode(SearchMode mode);
   SearchMode getSearchMode() const { return searchMode_; }
 
+  // Modo setup (primeiro boot): LED pisca lento indicando que o
+  // dispositivo aguarda configuração pelo app (nome, WiFi, PIN).
+  void setSetupMode(bool on);
+  bool setupMode() const { return setupMode_; }
+
   // "Fala" redes WiFi (pisca LED para cada rede)
   void speakWiFiNetworks();
 
@@ -113,6 +118,9 @@ void refreshFromConfig();   // aplica brilho/inversão salvos
   SearchMode searchMode_ = SEARCH_OFF;
   uint32_t searchStart_ = 0;
   bool     searchSpeakDone_ = false;
+
+  // --- modo setup (primeiro boot) ---
+  bool setupMode_ = false;
 
   // --- busca intermitente (quando LED externo desligado) ---
   uint32_t intermittentLastScan_ = 0;
